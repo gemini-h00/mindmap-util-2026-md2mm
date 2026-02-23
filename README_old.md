@@ -42,19 +42,13 @@ Markdownファイル（.md, .txtなど）を中央のドロップゾーンにド
 Google サイトへの埋め込みについて
 Google サイトなどの iframe 埋め込み環境では、リロードのたびにドメインが変更される仕組みがあるため、APIキーの保存機能（LocalStorage）が正しく動作しない場合があります。永続的な保存を利用したい場合は、GitHub Pages 等の独自のドメインを持つ環境での利用を推奨します。
 
-## 🔧 変更履歴（2026-02-23）
-
-- **APIキーの送信方法を更新**：URLの `?key=` パラメータではなく、公式仕様どおり `x-goog-api-key` HTTPヘッダーで送信する方式に変更しました。:contentReference[oaicite:3]{index=3}
-- **モデル指定を安定版へ**：`gemini-2.5-flash-preview-09-2025` から安定版 `gemini-2.5-flash` に変更しました（プレビューは将来の廃止対象になり得るため）。:contentReference[oaicite:4]{index=4}
-- **エラーメッセージ改善**：APIが返す `error.message` を可能な範囲で表示し、原因特定がしやすいようにしました。:contentReference[oaicite:5]{index=5}
-
 ## 📄 技術スタック
 
 - Frontend: HTML5, Tailwind CSS
 
 - Icon: Google Material Symbols, Inline SVG
 
-- AI Model: Google Gemini 2.5 Flash (gemini-2.5-flash)
+- AI Model: Google Gemini 2.5 Flash (gemini-2.5-flash-preview-09-2025)
 
 - Format: Freeplane XML (.mm)
 

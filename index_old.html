@@ -217,11 +217,9 @@
                 ${markdownText}
                 `;
 
-                // ✅ 変更点：APIキーは URL パラメータではなく、x-goog-api-key ヘッダーで送る（公式仕様）
-                // ✅ 変更点：モデル指定を安定版へ（preview から stable）
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${currentApiKey}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': currentApiKey },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         contents: [{ 
                             parts: [{ text: prompt }] 
@@ -229,19 +227,9 @@
                     })
                 });
 
-                if (!res.ok) {
-                    let errMsg = "API通信エラー。APIキー/モデル/利用制限を確認してください。";
-                    try {
-                        const errJson = await res.json();
-                        if (errJson?.error?.message) errMsg = errJson.error.message;
-                    } catch (_) {}
-                    throw new Error(errMsg);
-                }
+                if (!res.ok) throw new Error("API通信エラー。キーが有効か確認してください。");
                 const data = await res.json();
-                const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!text) {
-                    throw new Error("API応答の形式が想定と異なります（候補テキストが取得できません）。");
-                }
+                const text = data.candidates[0].content.parts[0].text;
 
                 if (text.includes("NOT_A_MINDMAP")) throw new Error("マインドマップ構造として認識できませんでした。");
 
