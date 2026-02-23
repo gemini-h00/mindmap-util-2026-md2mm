@@ -92,25 +92,13 @@
             </div>
             <input type="file" id="fileInput" class="hidden" accept=".md,.txt,.markdown">
         </div>
-        
-        <!-- 動作ヒント -->
-        <div class="m3-card p-6 mb-8">
-            <h2 class="text-sm font-bold flex items-center gap-2 text-[#6750a4] mb-3">
-                <span class="material-symbols-outlined text-lg">info</span>
-                動作ヒント
-            </h2>
-            <ul class="list-disc pl-5 space-y-2 text-sm text-[#49454f]">
-                <li><span class="font-medium">429 (TooManyRequests)</span> は「待てば回復」することが多いです。表示された秒数を待って再試行してください。</li>
-                <li><span class="font-medium">404 (NotFound)</span> が出た場合は、モデル名の変更・廃止が原因のことがあります（このページは安定版モデルを使用していますが、将来変更される可能性はあります）。</li>
-                <li>同じMarkdown内容はローカルにキャッシュされるため、再実行してもAPIを叩きません。</li>
-            </ul>
-        </div>
     </div>
 
     <script>
-        // APIキー保存
+        // ストレージキーを変更して、画像版とキー設定を共有するか分けるか選べますが、
+        // ユーザーの利便性を考え、同じキーを共有できるように元のキー名のままにするか、
+        // 別アプリとして扱うなら別名にします。今回は別アプリとして別名にします。
         const STORAGE_KEY = 'freeplane_md_conv_api_key_v1';
-        const CACHE_PREFIX = 'freeplane_md_conv_cache_v1_';
         let currentApiKey = '';
 
         const elements = {
@@ -198,24 +186,6 @@
             if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
         };
 
-        async function sha256Text(text) {
-            // GitHub Pages(HTTPS) なら crypto.subtle が利用可能です。
-            if (!window.crypto || !crypto.subtle) return null;
-            const enc = new TextEncoder();
-            const buf = await crypto.subtle.digest('SHA-256', enc.encode(text));
-            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        function cacheGet(hash) {
-            if (!hash) return null;
-            try { return localStorage.getItem(CACHE_PREFIX + hash); } catch (_) { return null; }
-        }
-
-        function cacheSet(hash, xml) {
-            if (!hash) return;
-            try { localStorage.setItem(CACHE_PREFIX + hash, xml); } catch (_) { /* 容量制限などは無視 */ }
-        }
-
         async function processFile(file) {
             if (!currentApiKey) {
                 showToast("先にAPIキーを設定・保存してください", true);
@@ -228,19 +198,10 @@
             elements.statusMessage.innerText = "Markdownを解析中...";
 
             try {
-                // テキスト読み込み
+                // 画像読み込みではなく、テキスト読み込みに変更
                 const markdownText = await readFileAsText(file);
 
-                // 変換結果キャッシュ（同一Markdown内容ならAPI呼び出しを省略）
-                const hash = await sha256Text(markdownText);
-                const cached = cacheGet(hash);
-                if (cached) {
-                    downloadFile(cached);
-                    showToast("キャッシュから変換結果を取得しました！");
-                    return;
-                }
-
-                // プロンプト（Markdown解析用）
+                // プロンプトをMarkdown解析用に変更
                 const prompt = `
                 You are a Mind Map Converter. 
                 Convert the following Markdown text into a strict hierarchical text structure suitable for parsing into Freeplane XML.
@@ -256,7 +217,8 @@
                 ${markdownText}
                 `;
 
-                // API呼び出し（x-goog-api-key ヘッダー送信）
+                // ✅ 変更点：APIキーは URL パラメータではなく、x-goog-api-key ヘッダーで送る（公式仕様）
+                // ✅ 変更点：モデル指定を安定版へ（preview から stable）
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': currentApiKey },
@@ -284,7 +246,6 @@
                 if (text.includes("NOT_A_MINDMAP")) throw new Error("マインドマップ構造として認識できませんでした。");
 
                 const xml = convertToMM(text);
-                cacheSet(hash, xml);
                 downloadFile(xml);
                 showToast("変換完了しました！");
             } catch (err) {
@@ -326,6 +287,7 @@
             URL.revokeObjectURL(url);
         }
 
+        // テキストファイル読み込み用関数
         function readFileAsText(f) { 
             return new Promise((resolve, reject) => { 
                 const reader = new FileReader(); 
